@@ -33,6 +33,7 @@ export default function GraphView() {
         graphData,
         selectedNodeId,
         highlightNodeId,
+        pendingFocusId,  // ← NEW: from store for delayed focus after graph load
         setSelectedNode,
         setHighlightNode,
         pushGraphHistory,
@@ -73,7 +74,7 @@ export default function GraphView() {
     }, [graphData]);
 
     /* --------------------------------------------------------
-       Zoom + highlight on selection with "entering node" effect
+       IMMEDIATE Zoom + highlight on selection (for nodes already in graph)
     -------------------------------------------------------- */
     useEffect(() => {
         if (!graphData || !selectedNodeId || !fgRef.current) return;
@@ -92,7 +93,7 @@ export default function GraphView() {
         
         const t = setTimeout(() => setHighlightNode(null), 2000);
         return () => clearTimeout(t);
-    }, [selectedNodeId, graphData, setHighlightNode]);
+    }, [selectedNodeId, graphData.nodes, setHighlightNode]);
 
     if (!graphData) return null;
 
@@ -118,6 +119,33 @@ export default function GraphView() {
             enableNodeDrag={true}
             onNodeDragStart={() => setIsDragging(true)}
             onNodeDragEnd={() => setIsDragging(false)}
+
+            /* --------------------------------------------------------
+               NEW: Handle delayed focus after graph load/simulation settles
+            -------------------------------------------------------- */
+            onEngineStop={() => {
+                if (!pendingFocusId) return;
+
+                const node = graphData.nodes.find((n) => n.id === pendingFocusId);
+                if (!node || !node.x || !node.y) return;
+
+                // Zoom to focused node once positions are settled
+                fgRef.current.centerAt(node.x, node.y, 1000);
+                fgRef.current.zoom(2.2, 1000);
+
+                setSelectedNode(pendingFocusId);
+                setHighlightNode(pendingFocusId);
+                setZoomTransition(true);
+
+                setTimeout(() => {
+                    setHighlightNode(null);
+                    setZoomTransition(false);
+                }, 2000);
+
+                // Clear pending
+                useGraphStore.setState({ pendingFocusId: null });
+            }}
+
             nodeCanvasObject={(node, ctx, globalScale) => {
                 if (node.x == null || node.y == null) return;
                 
@@ -335,12 +363,8 @@ export default function GraphView() {
 
                     try {
                         const expanded = await fetchConceptGraph(id);
-                        setTimeout(() => {
-                            setGraphData(expanded);
-                            setTimeout(() => {
-                                fgRef.current?.zoomToFit(600, 140);
-                            }, 100);
-                        }, 400);
+                        setGraphData(expanded);
+                        // ← pendingFocusId will be set externally (from palette or click), onEngineStop handles zoom
                     } catch (err) {
                         console.error("Failed to load concept graph:", err);
                     }

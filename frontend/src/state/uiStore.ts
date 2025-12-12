@@ -12,23 +12,26 @@ interface UIState {
   openBlogModal: (id: string) => void;
   closeBlogModal: () => void;
 
-  // Navigation history
+  // Navigation history for blog modal back button
   history: string[];
   pushHistory: (id: string) => void;
   popHistory: () => string | null;
+
+  // NEW: For graph search → focus after load
+  pendingFocusId: string | null;
+  setPendingFocusId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
   // Spotlight Search
   commandOpen: false,
   setCommandOpen: (open) => set({ commandOpen: open }),
-  toggleCommand: () => set((s) => ({ commandOpen: !s.commandOpen })),
+  toggleCommand: () => set((state) => ({ commandOpen: !state.commandOpen })),
 
   // Modal state
   blogModalOpen: false,
   currentBlogId: null,
 
-  // 🚀 DO NOT push to history here
   openBlogModal: (id: string) =>
     set({
       blogModalOpen: true,
@@ -41,23 +44,25 @@ export const useUIStore = create<UIState>((set, get) => ({
       currentBlogId: null,
     }),
 
-  // Navigation stack
+  // Navigation stack (only blog IDs)
   history: [],
 
   pushHistory: (id: string) =>
-    set((s) => ({
-      history: [...s.history, id],
+    set((state) => ({
+      history: [...state.history, id],
     })),
 
   popHistory: () => {
-    const h = get().history;
-    if (h.length === 0) return null;
+    const { history } = get();
+    if (history.length === 0) return null;
 
-    const newH = [...h];
-    const prev = newH.pop();
-
-    set({ history: newH });
-
-    return prev ?? null;
+    const prev = history[history.length - 1];
+    set({ history: history.slice(0, -1) });
+    return prev;
   },
+
+  // NEW: Pending node to focus after graph load
+  pendingFocusId: null,
+  setPendingFocusId: (id: string | null) =>
+    set({ pendingFocusId: id }),
 }));
