@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Concept {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String?
+  blogPostIds String[]   @default([])
+  relatedIds  String[]   @default([])
+  embedding   Json?   
+  createdAt   DateTime   @default(now())
+}
+
+model BlogPost {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String?
+  content     String
+  excerpt     String?
+  conceptIds  String[]   @default([])
+  relatedIds  String[]   @default([])
+  embedding   Json?
+  createdAt   DateTime   @default(now())
+}

@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  mongo:
+    container_name: semantic-mongo
+    image: mongo:6
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    networks:
+      - mongo-net
+    volumes:
+      - mongo-data:/data/db
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        mongod --replSet rs0 --bind_ip_all &
+        sleep 5
+        echo "Initiating replica set..."
+        mongosh --eval "rs.initiate({_id: 'rs0', members:[{_id:0, host:'localhost:27017'}]})"
+        tail -f /dev/null
+
+networks:
+  mongo-net:
+
+volumes:
+  mongo-data:
