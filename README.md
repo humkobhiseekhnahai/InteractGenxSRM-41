@@ -76,8 +76,8 @@ npm install
 Create a .env file inside backend/:
 
 ```
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/interactgenx"
-PORT=3001
+DATABASE_URL=""
+PORT=4000
 ```
 
 Replace:
