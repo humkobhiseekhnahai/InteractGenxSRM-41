@@ -9,7 +9,7 @@ interface GraphState {
   // === Graph Navigation History ===
   history: GraphData[];
 
-  // old names (kept)
+  // old names (kept for backward compatibility)
   pushHistory: (g: GraphData) => void;
   popHistory: () => GraphData | null;
 
@@ -24,8 +24,12 @@ interface GraphState {
   setSelectedNode: (id: string | null) => void;
   setHighlightNode: (id: string | null) => void;
 
-  // === Spotlight (Cmd+K) ===
+  // === Spotlight / Search focus ===
   focusNode: (id: string) => void;
+
+  // ← ADD THESE TWO LINES HERE
+  pendingFocusId: string | null;
+  setPendingFocusId: (id: string | null) => void;
 }
 
 export const useGraphStore = create<GraphState>((set, get) => ({
@@ -75,10 +79,15 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setSelectedNode: (id) => set({ selectedNodeId: id }),
   setHighlightNode: (id) => set({ highlightNodeId: id }),
 
-  // === Spotlight focus ===
+  // === Spotlight focus (immediate) ===
   focusNode: (id) =>
     set({
       selectedNodeId: id,
       highlightNodeId: id,
     }),
+
+  // ← ADD THESE TWO HERE (inside the store object)
+  pendingFocusId: null,
+  setPendingFocusId: (id: string | null) =>
+    set({ pendingFocusId: id }),
 }));
